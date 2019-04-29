@@ -1,0 +1,158 @@
+---
+title: "R Notebook"
+author: "Yiqiao Yin, Yuexiao Pan"
+date: April 9, 2019
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+What data set are we looking at? What is the motivation?
+
+What can we do better visualize the time-series phenomenon in stock market? This project we will be working with a small group of stocks and we will explore the tools that we can use to visualize the market environment in statistical graphics.
+
+# Exploratory Data Analysis
+
+Set up working directory and load all functions using *source* function.
+
+```{r, warning=FALSE, message=FALSE, error=FALSE}
+# Let us load the sciprt of all defined functions
+path <- "C:/Users/JARVIS/OneDrive/STATS GR5293 - Statistical Graphics/4. Final Project/scripts/"
+source(paste0(path,"def_of_functions.R"))
+#source("def_of_functions.R")
+```
+
+## Data
+
+This is the raw data we are working with. We collect 9 companies, Apple-`AAPL`, Facebook-`FB`, Google-`GOOGL`, Walmart-`WMT`, Walt Disney Co-`DIS`, Starbucks-`SBUX`, Goldman Sachs Group-`GS`, Bank of America-`BA` and Morgan Stanley-`MS`, with 3 in each sector (total of 3 sectors). The sectors are Technology, Consumer, and Financial. For each stock, we collect open, high, low, and close as four main prices for each day. The prices unit is US dollar. The data is collected from ........
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+datatable(Gen_Data())
+```
+
+## Time-series Plot
+
+The most intuitive graph is time-series plot. Given a certain days in the past, what would the stocks path look like? We use *dygraph* function in the following code and we rebase all stocks starting from 0\%. This way we can visualize how different each stock moves as time goes on. The purpose of using *dygraph* here is to allow flexibility in choosing and navigating different time frames to satisfy different people's needs.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+DePlot.Initial.with.Return()
+```
+
+In this graph, we start with a default time point. We start with 0\% returns for all stocks. Then their returns either decreased or increased. From July 5,2018 to July 25, 2018, all stocks returns increased and on July 26, Facebook had a sharp drop (from 10\% to -10\%). After that, all stock returns fluctuated differently until November 8, 2018, from when all stocks started to decrease. It is noticeable that all stocks were 'slashed' a lot before the Christmas eve and had a large recovering jump on December 26, 2018. After the Christmas, they increased gradually in different paces. From a big picture, only two stocks, Walmart and Starbucks always had poistive returns.   
+
+
+## Bar Plot in Grid
+
+The data collect open, high, low, and close prices for each stock. Let us visualize distribution for open, high, low, and close prices for each stock. More importantly, do the distributions change over time? 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=16, fig.height=14}
+grid_barplot()
+```
+
+
+
+## QQPlot
+
+Let us creat a simple portfolio using equal weight on each stock. That is, for a portfolio of total of 9 stocks, each stock gets a weight of $1/9 = 11.1\%$. For this portfolio (let us call it equal weight portfolio), we can compare expected return with that of market and standard normal distribution. We can attempt to plot *qqplot* to compare the results.
+
+From statsitical point of view, we can observe the graphs below that most of the dots fall on the 45 degree line which tells us strong correlation between the two objects used in each plot. For example, the first one (the left one in the grid below) is portfolio (equal weight) return versus standard normal. We constructed 9 plots (that is, 3 different pairs for 3 time frames). As one can see, the longer the days of data we collect the better the dots fall on 45 degree line. In other words, we can claim that there could be a positively correlated relationship between those two data sets, i.e. they may come from the same distribution.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=10}
+Day5 <- QQ_Comparison(past_n_days = 5-1)
+Day30 <- QQ_Comparison(past_n_days = 30-1)
+Day100 <- QQ_Comparison(past_n_days = 100-1)
+grid.arrange(Day5$qqP1,Day5$qqP2,Day5$qqP3,
+             Day30$qqP1,Day30$qqP2,Day30$qqP3,
+             Day100$qqP1,Day100$qqP2,Day100$qqP3, nrow=3)
+```
+
+## Processed Data
+
+Instead of working with raw data, we can also work with processed data. We can drastically simplify the raw data to only having returns from different periods, say past week, month, quarter, and etc..
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+data.all <- All.Indice.3D(); datatable(data.all)
+```
+
+## Cleveland Dot Plot
+
+We can construct classical Cleveland dot plot to visualize the processed data. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+data.all$Name <- rownames(data.all)
+P1 <- ggplot(data.all, aes(Pre.5.Days, Name)) +
+  geom_point(aes(color = Sector))
+P2 <- ggplot(data.all, aes(Pre.30.Days, Name)) +
+  geom_point(aes(color = Sector))
+P3 <- ggplot(data.all, aes(Pre.Quarter, Name)) +
+  geom_point(aes(color = Sector))
+P4 <- ggplot(data.all, aes(Pre.Year, Name)) +
+  geom_point(aes(color = Sector))
+grid.arrange(P1,P2,P3,P4, nrow=2)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+tempdata <- data.all %>% rownames_to_column("Name") %>% gather(key = "Type", value = "Return", -Name, -Sector)
+ggplot(tempdata, aes(Return, Name, color = Sector, type = Return, shape = Type)) + geom_point()
+```
+
+
+## Parcoords
+
+To click and drag along an axis to filter data, we are able to filter different stocks given different windows of thresholds according to different axis. This flexibility comes in handy when hedge fund managers want to select a few stocks that satisfy their strategies. 
+
+On a side note, one famous strategy is long-run reversal. This strategy selects stocks with the lowest yearly return and highest 5-day return as a portfolio. One can drag and click to create windows in the following *parcoords* output. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+parcoords(data.all[, -6],
+          rownames = T,
+          brushMode = "1d",
+          color = list(
+            colorScale = htmlwidgets::JS('d3.scale.category10()'),
+            colorby = "Sector")
+          #alpha = 0.4,
+          #color = c(ifelse(data.all$Sector == "Technology", 1, ifelse(data.all$Sector == "Consumer", 2, 3)))
+          )
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+library(GGally)
+ggparcoord(
+  data.all,
+  columns = 1:4,
+  #alphaLines = 0.5,
+  splineFactor = 10,
+  groupColumn = 5
+) 
+```
+
+## 3D Bar Plot
+
+By using *cloud()* function, the algorithm for identifying which edges of the bounding box should be drawn before the points are plotted fails in some cases.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12}
+# sector: Technology, Consumer, Financial
+P1 <- Bar.Plot.3D(DT = data.all[, -6], which.sector = "Technology")
+P2 <- Bar.Plot.3D(DT = data.all[, -6], which.sector = "Consumer")
+P3 <- Bar.Plot.3D(DT = data.all[, -6], which.sector = "Financial")
+grid.arrange(P1,P2,P3, nrow = 1)
+```
+
+## Income Statement
+
+We can also take a look at overview of selected items of income statement for each of the stocks.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=10}
+all_company_income_plot()
+```
+
+

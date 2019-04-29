@@ -1,0 +1,3 @@
+2.6: facet on sector; color for type
+2.8: min and max the same
+Extra: change Section # align with instructions

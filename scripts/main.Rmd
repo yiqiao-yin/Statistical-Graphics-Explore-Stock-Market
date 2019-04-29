@@ -1,0 +1,277 @@
+---
+title: "Statiatical Graphics Final Project"
+author: "Yiqiao Yin, Yuexiao Pan"
+date: April 29, 2019
+output:
+  html_document:
+    code_folding: hide
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+Scholars, traders, and investors study market for decades. Before we can start quantitative analysis, sufficient amount of exploratory data analysis is much desired. What can we do better visualize the time-series phenomenon in stock market? This project we will be working with a small group of stocks and we will explore the tools that we can use to visualize the market environment in statistical graphics. Not only do we provide original work developed by ourselves we believe our visualization can discover some of the insights to drive quantitative analysis. This notebook is coded for this presentation and for any audience to reproduce our work. Through multidimensional lenses of ours, we help visualize and potentially unleash the secrets hidden in stock data so that scholars and practitioners can better do the job in quantitative analysis. 
+
+# Description of Data Source
+
+Set up working directory and load all functions using *source* function. We have written a list of functions in directed working path that we can use when called. This is for convenience of reading purpose. 
+
+```{r, warning=FALSE, message=FALSE, error=FALSE}
+# Let us load the sciprt of all defined functions
+path <- "C:/Users/JARVIS/OneDrive/STATS GR5293 - Statistical Graphics/4. Final Project/scripts/"
+#path <- "C:/Users/eagle/OneDrive/STATS GR5293 - Statistical Graphics/4. Final Project/scripts"
+source(paste0(path,"/def_of_functions.R"))
+```
+
+## Data
+
+We use *quantmod* to directly download stock data from yahoo finance. We wrote a function that directly downloads 9 stocks, i.e. (in alphabetical order) Apple (AAPL), Bacnk of America (BAC), Facebook (FB), Google (GOOGL), Goldman Sachs (GS), Pepsi (PEP), Starbucks (SBUX), Wells Fargo (WFC), Wal-Mart (WMT). The function downloads all available data points. 
+
+A natural question arises. Some companies are more than 10 years old. For example, Wells Fargo is an old company and has thousands of data points. Some companies are young and only have a few years of data. For example, Facebook is relatively young and only went IPO a fews years ago. Once downloaded data, we simply use *rbind* to line them up together by the same attributes and by Date (which we will add according to each data point for each stock).
+
+This is the raw data we are working with. We collect 9 companies with 3 in each sector (total of 3 sectors). The sectors are Technology, Consumer, and Financial. For each stock, we collect open, high, low, and close as four main prices for each day. 
+
+### Description of Data Import / Cleaning / Transformation
+
+This is the raw data we are working with. We collect 9 companies, Apple-`AAPL`, Facebook-`FB`, Google-`GOOGL`, Walmart-`WMT`, Walt Disney Co-`DIS`, Starbucks-`SBUX`, Goldman Sachs Group-`GS`, Bank of America-`BA` and Morgan Stanley-`MS`, with 3 in each sector (total of 3 sectors). The sectors are Technology, Consumer, and Financial. For each stock, we collect open, high, low, and close as four main prices for each day. The prices unit is US dollar. The data is collected using *quantmod* function *getSymbols* and the script downloads all available data for each stock (therefore they are different in length).
+
+The following section we load data using *Gen_data* function which will give us a time-series data table with attributes: 
+
+- *Open*: the opening price of that day; 
+
+- *High*: the highest price of that day; 
+
+- *Low*: the lowest price of that day; 
+
+- *Close*: the closing price of that day; 
+
+- *Volume*: the volume of that day; 
+
+- *Adjusted*: the adjusted closing price in case of after-hour trading;; 
+
+- *Stock*: the name of the company; 
+
+- *Sector*: the name of the sector; 
+
+- *Date*: the date. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+data <- Gen_Data(); datatable(data)
+# Store
+#temp = Gen_Data()
+#path <- "C:/Users/eagle/OneDrive/STATS GR5293 - Statistical Graphics/4. Final Project/data"
+#write.csv(temp, paste0(path,"/data_full.csv"))
+```
+
+## Processed Data: Cleaning
+
+Instead of working with raw data, we can also work with processed data. We can drastically simplify the raw data to only having returns from different periods, say past week, month, quarter, and etc.. 
+
+### Description of Data Import / Cleaning / Transformation
+
+In this case, the processed data has attributes 
+
+- (1) previous 5 days return: for each stock, given all available data till the most recent trading day, we can compute the returns of the past five days;
+
+- (2) previous 30 days return: for each stock, given all available data till the most recent trading day, we can compute the returns of the past 30 days (aka. a month);
+
+- (3) previous year return: for each stock, given all available data till the most recent trading day, we can compute the returns of the past year (aka. 250 trading days);
+
+- (4) Sector: There are 9 stocks and thus only 9 observations.
+
+The processed data has much less information but the data are much more condensed and it includes much information for each numerical value. 
+
+### Analysis of Missing Values
+
+In the procedure of processing the data, we need to compute returns according to different periods as described above. For example, if today's price is 10 dollars and tomorrow's price is 12 dollars, then tomorrow we can compute return of 20%. We cannot do that for today simply because we need the data point for yesterday. Due to this problem, there are missing values generated from our functions when calculating returns. We simply write a function to get rid of these *NA* entries to ensure that our data is clean and free of bugs so that we can successfully generate plots without running into bugs.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE}
+data.all <- All.Indice.3D(); datatable(data.all)
+# Store
+#path <- "C:/Users/eagle/OneDrive/STATS GR5293 - Statistical Graphics/4. Final Project/data"
+#write.csv(data.all, paste0(path,"/data_processed.csv"))
+```
+
+# Results
+
+## Time-series Plot
+
+The most intuitive graph is time-series plot. Given a certain days in the past, what would the stocks path look like? We use *dygraph* function in the following code and we rebase all stocks starting from 0/%. This way we can visualize how different each stock moves as time goes on. The purpose of using *dygraph* here is to allow flexibility in choosing and navigating different time frames to satisfy different people's needs.
+
+- *rebase with returns*: the following time-series plots have 9 stocks (i.e. 9 paths), and the paths are rebased starting from 0\%. This means that we have a direct visualization of all 9 stocks given all historical data. There is a designiated time-series window in the bottom of the chart allow users to drag along.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+DePlot.Initial.with.Return()
+```
+
+- *rebase with initial value*: the following time-series plots have 9 stocks (i.e. 9 paths), and the paths are rebased starting from an exact numerical value, i.e. $100 dollars This means that we have a direct visualization of all 9 stocks given all historical data. There is a designiated time-series window in the bottom of the chart allow users to drag along.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+DyPlot.Initial.with.100()
+```
+
+## QQPlot
+
+Let us creat a simple portfolio using equal weight on each stock. That is, for a portfolio of total of 9 stocks, each stock gets a weight of $1/9 = 11.1/%$. For this portfolio (let us call it equal weight portfolio), we can compare expected return with that of market and standard normal distribution. We can attempt to plot *qqplot* to compare the results.
+
+From statsitical point of view, we can observe the graphs below that most of the dots fall on the 45 degree line which tells us strong correlation between the two objects used in each plot. For example, the first one (the left one in the grid below) is portfolio (equal weight) return versus standard normal. We constructed 9 plots (that is, 3 different pairs for 3 time frames). As one can see, the longer the days of data we collect the better the dots fall on 45 degree line. In other words, we can claim that there could be a positively correlated relationship between those two data sets, i.e. they may come from the same distribution.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=10}
+Day5 <- QQ_Comparison(past_n_days = 5-1)
+Day30 <- QQ_Comparison(past_n_days = 30-1)
+Day100 <- QQ_Comparison(past_n_days = 100-1)
+grid.arrange(Day5$qqP1,Day5$qqP2,
+             Day30$qqP1,Day30$qqP2,
+             Day100$qqP1,Day100$qqP2, nrow=3)
+```
+
+
+## GGPlot
+
+For original data, we can do the following. Let us use *ggplot* to present data with stocks on the x-axis and some defined metric on the y-axis while labeling colors using three different categories.
+
+- The first row compares *Close/Volume*, implying how much dollars (by closing price) is traded per million share, and the log scale of the same indicator, i.e. *log(Close/Volume)*. We can see that Technology Sector seems to have one candidate that has the highest closing price per share traded. Consumer Sector seems to have relatively small volatility in terms of price per volume. Financial Sector has a cnadidate that has the lowest of such metric.
+
+- The second row compares High minus Low momentum, measured by *(High-Low)/(Volume x 1e6)*, which indicates the difference between high and low per million share. we can confirm the pattern in the first row here, i.e. Technology Sector has one candidate has the lowest momentum and Consumer Sector is relatively stable in the middle.
+
+- The third row compares differences of closing and opening price by using *Close-Open*. If one believes the first two rows present results subject to dollar amount related to stock price, one can fairly compare prices using this difference. We can further confirm the pattern we have observed from previous two rows. 
+
+- Original scale vs. Log scale: From all three rows, we can observe the difference of using log scale and the original scale. Original scale directly presents data using numerical values calculated from indicated formula. This is sometimes difficult to tell the pattern. By using log scale, no matter what the formula is, we can better visualize the pattern and observe more apparent differences among different stocks.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+P_ClVol <- ggplot(data, aes(Stock, Close/Volume*1e6, color = Sector)) + geom_boxplot()
+P_logClVol <- ggplot(data, aes(Stock, log(Close/Volume*1e6), color = Sector)) + geom_boxplot()
+P_HminusLVol <- ggplot(data, aes(Stock, (High-Low)/(Volume*1e6), color = Sector)) + geom_boxplot()
+P_logHminusLVol <- ggplot(data, aes(Stock, log((High-Low)/(Volume*1e6)), color = Sector)) + geom_boxplot()
+P_OpCl <- ggplot(data, aes(Stock, Close-Open, color = Sector)) + geom_boxplot()
+P_logOpCl <- ggplot(data, aes(Stock, log(Close-Open), color = Sector)) + geom_boxplot()
+grid.arrange(P_ClVol, P_logClVol, 
+             P_HminusLVol, P_logHminusLVol, 
+             P_OpCl, P_logOpCl,
+             nrow = 3)
+```
+
+
+We can construct classical Cleveland dot plot to visualize the processed data. For each attribute, we can take advantage of so that it can add values to our plots. For example, the x-axis is return and the y-axis is the name of each stock while the color represents each sector.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+data.all$Name <- rownames(data.all)
+P1 <- ggplot(data.all, aes(Pre.5.Days, Name)) +
+  geom_point(aes(color = Sector), size = 3)
+P2 <- ggplot(data.all, aes(Pre.30.Days, Name)) +
+  geom_point(aes(color = Sector), size = 3)
+P3 <- ggplot(data.all, aes(Pre.Quarter, Name)) +
+  geom_point(aes(color = Sector), size = 3)
+P4 <- ggplot(data.all, aes(Pre.Year, Name)) +
+  geom_point(aes(color = Sector), size = 3)
+grid.arrange(P1,P2,P3,P4, nrow=2)
+```
+
+Alternatively, we can use *gather* function and use *ggplot* to put all four plots into one plot. We can introduce *Type* by using *gather* function. In this case we have circle, triangle, square, and plus symbols to represent previous 30 days, previous 5 days, previous quarter, and previous year, respectively. This approach is in a much neater manner and we can visualize immediately Facebook has the biggest gain in the past quarter wile Apple ranks the second. We also see that banks are not having a good year. For example, Goldman Sachs had a bad year and so was Morgan Stanle.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+tempdata <- data.all[, c(1:5)] %>% 
+  rownames_to_column("Name") %>% 
+  gather(key = "Type", value = "Return", -Name, -Sector)
+ggplot(tempdata, aes(Return, reorder(Name, +Return), color = Sector, type = Return, shape = Type)) + 
+  geom_point(size = 5) + ylab("Return") +
+  theme(text = element_text(size=20))
+```
+
+In situation when managers desire to follow sectors, one can plot returns for stocks according its sectors. By rearranging the plots, we are able to observe the following. We can facet according to 5-day returns, 30-day returns, quarterly returns, and yearly returns. Then we plot three sectors on y-axis and label stocks in different colors.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+P11 <- ggplot(data.all, aes(Pre.5.Days, Sector)) +
+  geom_point(aes(color = Name), size = 3)
+P22 <- ggplot(data.all, aes(Pre.30.Days, Sector)) +
+  geom_point(aes(color = Name), size = 3)
+P33 <- ggplot(data.all, aes(Pre.Quarter, Sector)) +
+  geom_point(aes(color = Name), size = 3)
+P44 <- ggplot(data.all, aes(Pre.Year, Sector)) +
+  geom_point(aes(color = Name), size = 3)
+grid.arrange(P11,P22,P33,P44, nrow=2)
+```
+
+As an additional feature, we can also flip the axis to put names on x-axis and returns on y-axis while facet using types of returns. We can use color to represent Sector.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12, fig.height=9}
+P11 <- ggplot(data.all, aes(Name, Pre.5.Days)) +
+  geom_point(aes(color = Sector), size = 3)
+P22 <- ggplot(data.all, aes(Name, Pre.30.Days)) +
+  geom_point(aes(color = Sector), size = 3)
+P33 <- ggplot(data.all, aes(Name, Pre.Quarter)) +
+  geom_point(aes(color = Sector), size = 3)
+P44 <- ggplot(data.all, aes(Name, Pre.Year)) +
+  geom_point(aes(color = Sector), size = 3)
+grid.arrange(P11,P22,P33,P44, nrow=2)
+```
+
+## Parcoords
+
+To click and drag along an axis to filter data, we are able to filter different stocks given different windows of thresholds according to different axis. This flexibility comes in handy when hedge fund managers want to select a few stocks that satisfy their strategies. 
+
+On a side note, one famous strategy is long-run reversal. This strategy selects stocks with the lowest yearly return and highest 5-day return as a portfolio. One can drag and click to create windows in the following *parcoords* output. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+parcoords(data.all[, -6],
+          rownames = T,
+          brushMode = "1d",
+          color = list(
+            colorScale = htmlwidgets::JS('d3.scale.category10()'),
+            colorby = "Sector"))
+```
+
+We can also visuzlie the same story from above by using *ggparcoord* which we can set *splineFactor* so that the paths of each line is a lot smoother. The purpose of doing this is because now we can visualize that Financial Sector (those paths in green) had fine month and quarter but had horrible week and year. Conversely, the Consumer Sector had fine week and year but horrible month and quarter.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=8}
+library(GGally)
+ggparcoord(
+  data.all,
+  columns = 1:4,
+  #alphaLines = 0.5,
+  splineFactor = 10,
+  groupColumn = 5
+) 
+```
+
+## 3D Bar Plot
+
+By using *cloud()* function, the algorithm for identifying which edges of the bounding box should be drawn before the points are plotted fails in some cases. This school of thought presents data using three-dimensional bar plots. The z-axis represents return in numerical values. The x-axis and y-axis are stocks and type (past week, month, quarter, or year). There are three plots while each represents a sector. 
+
+For example, we immediately see that Facebook had the best quarter in Technology Sector. We can also tell that Starbucks had above 20/% return for the past year. 
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, fig.width=12}
+# sector: Technology, Consumer, Financial
+P1 <- Bar.Plot.3D(DT = data.all[, -6], which.sector = "Technology")
+P2 <- Bar.Plot.3D(DT = data.all[, -6], which.sector = "Consumer")
+P3 <- Bar.Plot.3D(DT = data.all[, -6], which.sector = "Financial")
+grid.arrange(P1,P2,P3, nrow = 1)
+```
+
+# Interactive Component
+
+Please visit [Explore Stock Market](https://y-yin.shinyapps.io/EXPLORE-STOCK-MARKET/) for Shiny App.
+
+# Conclusion
+
+This notebook investigates the potential graphics that one can discover and explore before entering the quantitative analysis of stock market or so called fintech area. 
+
+- We present real world context by directly downloading data from internet live with codes to properly clean up and handle missing values. 
+
+- The notebook also provides explanations where to call or source the functions which is stored in another script for convenience and reproducibility purpose. 
+
+- Our analysis covers multidimensional aspects include but not limited to time-series plot, qq-plot, ggplot-, parcoords, and three-dimensional bar plot. 
+
+- We have at least a paragraph of explanation in front of a plot to explain the purpose and observation including design, forms, as well as designated metrics, for each plot.
+
+- We wrap story up with an interactive app coded through the Shiny platform.
+
+Throughout such practice, we unlock the hidden secrets in stock data such as the correlation between an equal portfolio and market index fund as well as the inverse return path between Technology Sector and Consumer Sector. 
+
